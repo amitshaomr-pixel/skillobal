@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+pymongo
+motor
+passlib[bcrypt]
+bcrypt==3.2.0
+python-jose[cryptography]
+firebase_admin
+google-auth
+google-auth-oauthlib
+itsdangerous
+email-validator
