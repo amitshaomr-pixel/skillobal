@@ -26,7 +26,7 @@ def get_flow():
             ""
             "openid"
         ],
-        redirect_uri="https://bx3vjzwq-8000.inc1.devtunnels.ms/auth/callback"
+        redirect_uri="http://127.0.0.1:8000/auth/callback"
     )
 
 
