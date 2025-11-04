@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends
 from login.token_utils import *
-from core.database import courses_collection , layout_collection , slider_collection
+from core.database import courses_collection , layout_collection 
 from utils.helpers import all_course_helper
 from bson import ObjectId
  
@@ -45,21 +45,4 @@ async def get_popular_courses(cat_id: str | None = None):
 
 
 
-SLIDER_PROJECTION = {
-    "img_url": 1,
-    "title": 1,
-    "description": 1,
-    "cat_id":1,
-    'datetime':0
-}
-
-@router.get("/sliders" , dependencies=[Depends(check_token)])
-async def get_sliders():
-    sliders = []
-    async for doc in slider_collection.find({}, SLIDER_PROJECTION):
-        doc["_id"] = str(doc["_id"])  
-        if "cat_id" in doc and doc["cat_id"]:  
-            doc["cat_id"] = str(doc["cat_id"])
-        sliders.append(doc)
-    return sliders
 

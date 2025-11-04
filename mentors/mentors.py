@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from core.database import mentors_collection
+from core.database import instructor_collection
 from login.token_utils import check_token
 
 router = APIRouter(tags=["Mentors"])
@@ -8,7 +8,7 @@ router = APIRouter(tags=["Mentors"])
 async def get_all_mentors():
     """Fetch mentor section data"""
     mentors = []
-    async for mentor in mentors_collection.find({}):
+    async for mentor in instructor_collection.find({}):
         mentors.append({
             "id": str(mentor["_id"]),
             "name": mentor.get("name"),
