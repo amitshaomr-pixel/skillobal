@@ -1,3 +1,0 @@
-rpan rpuk ygfj rkxw
-
-taskkill /f /im python.exe
