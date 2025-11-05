@@ -23,7 +23,6 @@ def get_flow():
         scopes=[
             "https://www.googleapis.com/auth/userinfo.email",
             "https://www.googleapis.com/auth/userinfo.profile",
-            ""
             "openid"
         ],
         redirect_uri="http://127.0.0.1:8000/auth/callback"

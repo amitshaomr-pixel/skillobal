@@ -42,7 +42,7 @@ async def get_course_detail(course_id: str):
 
     # Add videos list from course document
     videos = course.get("videos", [])
-    course_data["videos"] = videos
+    course_data["lessons"] = videos
 
     return {"status": "success", "data": course_data}
 

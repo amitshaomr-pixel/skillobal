@@ -4,7 +4,6 @@ from comments import testimonials
 from courses import featuredcourses_routes, popularcourses_routes, view_course
 from contect import contect
 from mentors import mentors
-from routes import personal_info_routes
 from login import google_login, login_auth_routes
 from dashboard import hero_section
 from ques_ans import ques_ans
@@ -17,7 +16,6 @@ router.include_router(login_auth_routes.router)
 router.include_router(popularcourses_routes.router)
 router.include_router(featuredcourses_routes.router)
 router.include_router(google_login.router)
-router.include_router(personal_info_routes.router)
 router.include_router(hero_section.router)
 router.include_router(sponsors.router)
 router.include_router(view_course.router)
