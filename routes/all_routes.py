@@ -8,6 +8,7 @@ from login import google_login, login_auth_routes
 from dashboard import hero_section
 from ques_ans import ques_ans
 from sponsors import sponsors
+from courses import review
 
 
 router = APIRouter()
@@ -24,3 +25,4 @@ router.include_router(mentors.router)
 router.include_router(testimonials.router)
 router.include_router(ques_ans.router)
 router.include_router(contect.router)
+router.include_router(review.router)
