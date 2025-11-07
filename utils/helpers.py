@@ -5,7 +5,7 @@ def all_course_helper(course) -> dict:
         "description": course["description"],
         "image_url": course["image_url"],
         "rating": course["rating"],
-        "instructor": course["instructor"],
+        "instructor": course.get("instructor",""),
         "cat_id": str(course["cat_id"])
     }
 
