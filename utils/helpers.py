@@ -6,7 +6,7 @@ def all_course_helper(course) -> dict:
         "image_url": course["image_url"],
         "rating": course["rating"],
         "instructor": course.get("instructor",""),
-        "cat_id": str(course["cat_id"])
+        "cat_id": str(course.get("cat_id",""))
     }
 
 def course_helper(course) -> dict:
@@ -18,7 +18,7 @@ def course_helper(course) -> dict:
         "rating": course["rating"],
         "price": course["price"],
         "instructor_id": str(course.get("instructor_id","")),
-        "cat_id": str(course["cat_id"]),
+        "cat_id": str(course.get("cat_id","")),
         "thumbnail_img_url": course.get("thumbnail_img_url", ""),
         "thumbnail_video_url": course.get("thumbnail_video_url", "")
     }

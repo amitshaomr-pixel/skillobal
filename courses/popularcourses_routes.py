@@ -7,7 +7,7 @@ from bson import ObjectId
 router = APIRouter(tags=["All Popular Courses"])
 
 
-@router.get("/all-popular-courses", dependencies=[Depends(check_token)])
+@router.get("/popular-courses", dependencies=[Depends(check_token)])
 async def get_popular_courses(cat_id: str | None = None):
     layout_id = ObjectId("68d0d3643deb5b22c6613b61")
     layout_doc = await layout_collection.find_one({"_id": layout_id})

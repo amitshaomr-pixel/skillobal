@@ -8,7 +8,7 @@ from bson import ObjectId
 router = APIRouter(tags=["Featured Courses"]) 
 
 
-@router.get("/all-featured-courses", dependencies=[Depends(check_token)])
+@router.get("/featured-courses", dependencies=[Depends(check_token)])
 async def get_featured_courses(cat_id: str | None = None):
     layout_id = ObjectId("68d104bd896833b9498ad494")
     layout_doc = await layout_collection.find_one({"_id": layout_id})

@@ -7,7 +7,7 @@ from bson import ObjectId
 
 router = APIRouter(tags=["Popular Categories"])
 
-@router.get("/popular-categories", dependencies=[Depends(check_token)])
+@router.get("/categories", dependencies=[Depends(check_token)])
 async def get_popular_categories():
     """Fetch list of all categories with main title and subtitle"""
     
@@ -24,7 +24,7 @@ async def get_popular_categories():
         raise HTTPException(status_code=404, detail="No categories found")
 
     return {
-        "title": "Popular Categories",
+        "title": "Categories",
         "subtitle": "Our mentors are professionals with years of experience in their fields, dedicated to helping you reach your learning goals.",
         "data": categories
     }
@@ -32,7 +32,7 @@ async def get_popular_categories():
 
 
 
-@router.get("/popular-categories/{cat_id}", dependencies=[Depends(check_token)])
+@router.get("/categories/{cat_id}", dependencies=[Depends(check_token)])
 async def get_courses_by_category(cat_id: str):
     """Fetch all courses that belong to a specific category"""
     try:
