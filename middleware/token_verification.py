@@ -1,7 +1,7 @@
 from fastapi import Request, HTTPException, status
-from core.authentication import verify_token
-from core.database import users_collection
-
+from middleware.authentication import decode_token
+from database.database import users_collection
+from bson import ObjectId
 
 async def check_token(request: Request):
     """
@@ -23,17 +23,22 @@ async def check_token(request: Request):
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Token missing"
                 )
-    print("Token received from frontend:", token)
     # Verify token
-    payload = verify_token(token)
+    payload = decode_token(token)
     if not payload or "user_id" not in payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
         )
-    print("Payload extracted from token:", payload)
+    user_identifier = payload["user_id"]
+    user = None
     # Check MongoDB user exists
-    user = users_collection.find_one({"_id": payload["user_id"]})
+    if not user and "@" in user_identifier:
+        user = await users_collection.find_one({"email": payload["user_id"]})
+
+    if not user and user_identifier.isdigit():
+        user = await users_collection.find_one({"mobile": user_identifier})
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -2,7 +2,7 @@
 
 import random
 from datetime import datetime, timedelta
-from core.database import db
+from database.database import db
 
 OTP_EXPIRY_MINUTES = 5
 

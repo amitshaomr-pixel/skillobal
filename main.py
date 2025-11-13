@@ -1,12 +1,9 @@
 from fastapi import FastAPI
 from routes import all_routes
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
-from core.config import settings
-import os
+from middleware.config import settings
+import uvicorn
 app = FastAPI()
-
-app.add_middleware(SessionMiddleware, secret_key= os.getenv("secret_key"))
 
 
 # ✅ CORS setup using config.py
@@ -25,7 +22,6 @@ async def root():
     return {"message": "API is running"}
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
 

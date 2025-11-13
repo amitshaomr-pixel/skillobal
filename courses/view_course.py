@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from login.token_utils import check_token
-from core.database import courses_collection, instructor_collection
+from middleware.token_verification import check_token
+from database.database import courses_collection, courses_videos_collection
 from utils.helpers import course_helper
 from bson import ObjectId
 
@@ -9,44 +9,36 @@ router = APIRouter(tags=["View Course"])
 @router.get("/courses-detail/{course_id}", dependencies=[Depends(check_token)])
 async def get_course_detail(course_id: str):
     """
-    Fetch full course details including instructor and video data.
+    Fetch full course details along with video data.
     """
     try:
-        oid = ObjectId(course_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid course id")
+        if not ObjectId.is_valid(course_id):
+            raise HTTPException(status_code=400, detail="Invalid course id")
 
-    # Fetch course document
-    course = await courses_collection.find_one({"_id": oid})
-    if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        course = await courses_collection.find_one({"_id": ObjectId(course_id)})
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
 
-    # Format basic course data
-    course_data = course_helper(course)
+        course_data = course_helper(course)
+        video_id = course.get("videos")
 
-    # Fetch instructor data using instructor_id
-    instructor_data = None
-    instructor_id = course.get("instructor_id")
-    if instructor_id:
-        try:
-            instructor_oid = ObjectId(instructor_id)
-            instructor = await instructor_collection.find_one({"_id": instructor_oid})
-            if instructor:
-                instructor["_id"] = str(instructor["_id"])
-                instructor_data = instructor
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid instructor id")
+        if not video_id or not ObjectId.is_valid(str(video_id)):
+            course_data["videos"] = []
+            return {"status": "success", "data": course_data}
 
-    # Add instructor info
-    course_data["instructor"] = instructor_data
+        video_doc = await courses_videos_collection.find_one(
+            {"_id": ObjectId(video_id)},
+            {"videos.video_title": 1, "videos.video_description": 1, "videos.videoUrl": 1, "videos.order": 1, "videos.type": 1}
+        )
 
-    # Add videos list from course document
-    lessons = course.get("lessons", [])
-    reviews = course.get("reviews", [])
-    mock_test = course.get("mock_test", [])
-    course_data["reviews"] = reviews
-    course_data["lessons"] = lessons
-    course_data["mock_test"] = mock_test
+        if not video_doc:
+            course_data["videos"] = []
+            return {"status": "success", "data": course_data}
 
-    return {"status": "success", "data": course_data}
+        course_data["videos"] = video_doc.get("videos", [])
+        return {"status": "success", "data": course_data}
 
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching course detail: {str(e)}")

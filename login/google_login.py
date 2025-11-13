@@ -1,23 +1,50 @@
+import os
+import json
+import firebase_admin
+from firebase_admin import credentials, auth
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
-from google.oauth2 import id_token
-import google.auth.transport.requests
-from core.database import users_collection
-from core.authentication import create_token
-import os
+from database.database import users_collection
+from middleware.authentication import create_token
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter(tags=["Firebase Login"])
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+def ensure_firebase_initialized() -> None:
+    """
+    Initialize Firebase Admin SDK once per process.
+    Tries JSON credentials from FIREBASE_CREDENTIALS, falling back to ADC if absent.
+    """
+    if firebase_admin._apps:
+        return
+    firebase_credentials = os.getenv("FIREBASE_CREDENTIALS")
+    try:
+        if firebase_credentials:
+            cred_dict = json.loads(firebase_credentials)
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+        else:
+            # Attempts to initialize with Application Default Credentials (ADC)
+            firebase_admin.initialize_app()
+    except Exception as exc:
+        # Surface a clear configuration error
+        raise RuntimeError(f"Failed to initialize Firebase Admin: {exc}") from exc
 
 
 @router.post("/google-login")
-async def firebase_login(request: Request):
+async def firebase_login(request: Request) -> JSONResponse:
     """
     Verifies Firebase ID token from frontend,
     extracts user details, saves/updates them in DB,
     and returns app login token.
     """
+    # Ensure Firebase is initialized
+    try:
+        ensure_firebase_initialized()
+    except Exception as init_exc:
+        raise HTTPException(status_code=500, detail=str(init_exc))
     data = await request.json()
     firebase_token = data.get("access_token")
 
@@ -25,36 +52,31 @@ async def firebase_login(request: Request):
         raise HTTPException(status_code=400, detail="Firebase access token is required")
 
     try:
-        # Verify the Firebase token
-        id_info = id_token.verify_oauth2_token(
-            firebase_token,
-            google.auth.transport.requests.Request(),
-            GOOGLE_CLIENT_ID
-        )
-
-        # Extract user info
+        # ✅ Verify Firebase token properly
+        decoded_token = auth.verify_id_token(firebase_token)
         user_data = {
-            "name": id_info.get("name"),
-            "email": id_info.get("email"),
-            "picture": id_info.get("picture"),
-            "uid": id_info.get("sub"),  # Firebase unique user ID
+            "name": decoded_token.get("name"),
+            "email": decoded_token.get("email"),
+            "picture": decoded_token.get("picture"),
+            
         }
 
-        # Store or update user in MongoDB
+        # Store/update in MongoDB
         await users_collection.update_one(
             {"email": user_data["email"]},
             {"$set": user_data},
             upsert=True
         )
 
-        # Generate app-specific JWT token
+        # Create app token
         app_token = create_token(user_data["email"])
 
         return JSONResponse({
             "status": "success",
+            "message":"Login Successfull",
             "user": user_data,
             "token": app_token
         })
 
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid Firebase token: {e}")
+        raise HTTPException(status_code=401, detail=f"Invalid Firebase token: {str(e)}")

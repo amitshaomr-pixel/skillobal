@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
-from core.database import contact_collection
-from login.token_utils import check_token
+from database.database import contact_collection
+from middleware.token_verification import check_token
 
 router = APIRouter(tags=["Contact"])
 

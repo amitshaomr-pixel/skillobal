@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
-from core.database import testimonials_collection
-from login.token_utils import check_token
+from database.database import testimonials_collection
+from middleware.token_verification import check_token
 
 router = APIRouter(tags=["Testimonials"])
 

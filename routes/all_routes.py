@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from categories import categories
 from comments import testimonials
 from courses import featuredcourses_routes, popularcourses_routes, view_course
-from contect import contect
+from contact import contact
 from mentors import mentors
 from login import google_login, login_auth_routes
 from dashboard import hero_section
@@ -24,5 +24,5 @@ router.include_router(categories.router)
 router.include_router(mentors.router)
 router.include_router(testimonials.router)
 router.include_router(ques_ans.router)
-router.include_router(contect.router)
+router.include_router(contact.router)
 router.include_router(review.router)

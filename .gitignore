@@ -30,5 +30,5 @@ Thumbs.db
 
 # Ignore secrets
 *.sqlite3
-core/client_secret.json
+serviceAccountKey.json
 

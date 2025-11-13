@@ -53,4 +53,3 @@ async def send_sms_otp(mobile: str, otp: str):
     except Exception as e:
         print("❌ Unexpected Error:", e)
         return False
-

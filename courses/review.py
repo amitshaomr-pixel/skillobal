@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from bson import ObjectId
-from login.token_utils import check_token
-from core.database import courses_collection
+from middleware.token_verification import check_token
+from database.database import courses_collection
 
 router = APIRouter(tags=["Course Review"])
 
-# 🧩 Review Schema
 class Review(BaseModel):
     user_id: str
     username: str
@@ -14,22 +13,20 @@ class Review(BaseModel):
     comment: str
     profile_image: str  # URL or base64 string
 
-# 🚀 Post Review for the same course_id
 @router.post("/courses-detail/{course_id}/add-review", dependencies=[Depends(check_token)])
 async def add_review_to_course(course_id: str, review: Review):
+    """
+    Add a review to a specific course.
+    """
     try:
-        # Validate course_id
-        try:
-            course_oid = ObjectId(course_id)
-        except Exception:
+        if not ObjectId.is_valid(course_id):
             raise HTTPException(status_code=400, detail="Invalid course id")
 
-        # Check if course exists
+        course_oid = ObjectId(course_id)
         course = await courses_collection.find_one({"_id": course_oid})
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
 
-        # Add the review to the course
         await courses_collection.update_one(
             {"_id": course_oid},
             {"$push": {"reviews": review.dict()}}
@@ -42,5 +39,7 @@ async def add_review_to_course(course_id: str, review: Review):
             "review": review.dict()
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error adding review: {str(e)}")
