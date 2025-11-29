@@ -1,24 +1,18 @@
-from fastapi import APIRouter, HTTPException, Depends
-from database.database import testimonials_collection
+from fastapi import APIRouter, Depends
+from comments.logic.testimonials_logic import fetch_all_testimonials
 from middleware.token_verification import check_token
+from middleware.exceptions import CustomError   # <-- ADD THIS
 
 router = APIRouter(tags=["Testimonials"])
 
-@router.get("/testimonials",dependencies=[Depends(check_token)])
+
+@router.get("/testimonials", dependencies=[Depends(check_token)])
 async def get_testimonials():
-    """Fetch testimonial section data"""
-    testimonials = []
-    async for t in testimonials_collection.find({}):
-        testimonials.append({
-            "id": str(t["_id"]),
-            "message": t.get("message"),
-            "name": t.get("name"),
-            "designation": t.get("designation"),
-            "profile_image": t.get("profile_image")
-        })
+
+    testimonials = await fetch_all_testimonials()
 
     if not testimonials:
-        raise HTTPException(status_code=404, detail="No testimonials found")
+        raise CustomError("No testimonials found", 404)   # <-- UPDATED
 
     return {
         "title": "Testimonials",

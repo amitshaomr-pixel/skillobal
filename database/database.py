@@ -1,4 +1,3 @@
-import motor.motor_asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 import os
@@ -40,6 +39,7 @@ testimonials_collection = db["testimonials"]
 faqs_collection = db["Q&A"]
 contact_collection = db["contact"]
 courses_videos_collection = db["courses_videos"]
+languages_collection = db["languages"]
 
 # ✅ Health Check Function
 async def check_database_health() -> bool:

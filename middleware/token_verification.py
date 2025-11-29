@@ -1,48 +1,38 @@
-from fastapi import Request, HTTPException, status
+from fastapi import Request
 from middleware.authentication import decode_token
 from database.database import users_collection
 from bson import ObjectId
+from middleware.exceptions import CustomError   # ✅ use this
 
 async def check_token(request: Request):
-    """
-    All-rounder token validator:
-    Checks MongoDB user ID instead of static data.
-    """
-    # 1️⃣ Bearer token
+
+    # Get token
     auth_header = request.headers.get("Authorization")
+
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ")[1]
     else:
-        # 2️⃣ Custom header
-        token = request.headers.get("token")
+        # Try alternate sources
+        token = request.headers.get("token") or request.query_params.get("token")
         if not token:
-            # 3️⃣ Query param
-            token = request.query_params.get("token")
-            if not token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Token missing"
-                )
-    # Verify token
+            raise CustomError("Token missing", 401)   # ✅ updated
+
+    # Decode
     payload = decode_token(token)
     if not payload or "user_id" not in payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
-        )
+        raise CustomError("Invalid token", 401)   # ✅ updated
+
     user_identifier = payload["user_id"]
     user = None
-    # Check MongoDB user exists
-    if not user and "@" in user_identifier:
-        user = await users_collection.find_one({"email": payload["user_id"]})
 
-    if not user and user_identifier.isdigit():
-        user = await users_collection.find_one({"mobile": user_identifier})
+    # Look up by ObjectId
+    if ObjectId.is_valid(user_identifier):
+        user = await users_collection.find_one({"_id": ObjectId(user_identifier)})
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
+        raise CustomError("User not found", 401)   # ✅ updated
 
-    return {"user_id": payload["user_id"], "user": user}
+    return {
+        "user_id": str(user["_id"]),
+        "user": user
+    }

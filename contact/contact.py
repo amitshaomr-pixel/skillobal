@@ -1,13 +1,16 @@
-from fastapi import APIRouter, HTTPException, Depends
-from database.database import contact_collection
+from fastapi import APIRouter, Depends
+from contact.logic.contact_logic import fetch_contact
 from middleware.token_verification import check_token
+from middleware.exceptions import CustomError   # <-- ADD THIS
 
 router = APIRouter(tags=["Contact"])
 
-@router.get("/contact",dependencies=[Depends(check_token)])
+
+@router.get("/contact", dependencies=[Depends(check_token)])
 async def get_contact():
-    contact = await contact_collection.find_one()
+    contact = await fetch_contact()
+
     if not contact:
-        raise HTTPException(status_code=404, detail="Contact info not found")
-    contact["_id"] = str(contact["_id"])
+        raise CustomError("Contact info not found", 404)   # <-- UPDATED
+
     return contact

@@ -1,29 +1,33 @@
+from fastapi import Header
 import os
 import uuid
 import logging
 from jose import JWTError, jwt
+from middleware.exceptions import CustomError   # ✅ unified custom error
 
-# ✅ Logger setup
 logger = logging.getLogger("uvicorn")
 
-# ✅ Load environment configuration safely
+# Load environment configuration
 JWT_SECRET = os.getenv("JWT_SECRET")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")  # Default to HS256 if not set
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")   # default HS256
+
+# Allowed algorithms
+SUPPORTED_ALGORITHMS = ["HS256", "HS384", "HS512"]
 
 
 def create_token(user_id: str) -> str:
     """
     Create a JWT token for the user.
-    Includes basic error handling and validation.
     """
     try:
         if not JWT_SECRET:
-            raise ValueError("JWT_SECRET is not set in environment variables.")
+            raise CustomError("JWT_SECRET is not set in environment variables.", 500)
 
-        # ✅ Supported algorithm validation
-        supported_algorithms = JWT_ALGORITHM
-        if JWT_ALGORITHM not in supported_algorithms:
-            raise ValueError(f"Unsupported JWT algorithm: {JWT_ALGORITHM}")
+        if JWT_ALGORITHM not in SUPPORTED_ALGORITHMS:
+            raise CustomError(
+                f"Unsupported JWT algorithm: {JWT_ALGORITHM}. Allowed: {SUPPORTED_ALGORITHMS}",
+                500
+            )
 
         payload = {
             "user_id": user_id,
@@ -33,15 +37,17 @@ def create_token(user_id: str) -> str:
         token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
         return token
 
-    except Exception as e:
-        logger.error(f"❌ Token creation failed: {e}")
+    except CustomError:
         raise
+    except Exception as e:
+        logger.error(f"Token creation failed: {e}")
+        raise CustomError("Failed to generate authentication token", 500)
 
 
 def decode_token(token: str) -> dict | None:
     """
-    Decode and validate JWT token.
-    Returns payload if valid, None if invalid or expired.
+    Decode and verify JWT token.
+    Returns: decoded payload or None if invalid.
     """
     try:
         if not JWT_SECRET:
@@ -52,8 +58,22 @@ def decode_token(token: str) -> dict | None:
         return payload
 
     except JWTError as e:
-        logger.warning(f"⚠️ Token verification failed: {e}")
+        logger.warning(f"Token verification failed: {e}")
         return None
     except Exception as e:
         logger.error(f"Unexpected error decoding token: {e}")
         return None
+
+
+
+
+async def optional_auth(authorization: str = Header(default=None)):
+    if authorization is None:
+        return None   # <-- IMPORTANT
+
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = decode_token(token)
+        return payload
+    except:
+        return None   # <-- ALSO IMPORTANT

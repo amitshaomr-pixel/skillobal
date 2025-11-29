@@ -1,22 +1,19 @@
-from fastapi import APIRouter, HTTPException, Depends
-from database.database import faqs_collection
+from fastapi import APIRouter, Depends
+from ques_ans.logic.ques_ans_logic import fetch_all_faqs
 from middleware.token_verification import check_token
+from middleware.exceptions import CustomError   # ✅ use custom error
 
 router = APIRouter(tags=["FAQs"])
 
-@router.get("/faqs",dependencies=[Depends(check_token)])
+
+@router.get("/faqs", dependencies=[Depends(check_token)])
 async def get_faqs():
     """Fetch FAQ section data"""
-    faqs = []
-    async for faq in faqs_collection.find({}):
-        faqs.append({
-            "id": str(faq["_id"]),
-            "question": faq.get("question"),
-            "answer": faq.get("answer")
-        })
 
-    if not faqs:
-        raise HTTPException(status_code=404, detail="No FAQs found")
+    faqs, error = await fetch_all_faqs()
+
+    if error == "not_found":
+        raise CustomError("No FAQs found", 404)   # ✅ replaced HTTPException
 
     return {
         "title": "Frequently Asked Questions",

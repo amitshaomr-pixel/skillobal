@@ -1,24 +1,18 @@
-from fastapi import APIRouter, HTTPException, Depends
-from database.database import instructor_collection
+from fastapi import APIRouter, Depends
+from mentors.logic.mentors_logic import fetch_all_mentors
 from middleware.token_verification import check_token
+from middleware.exceptions import CustomError   # ✅ use this
 
 router = APIRouter(tags=["Mentors"])
 
+
 @router.get("/mentors", dependencies=[Depends(check_token)])
 async def get_all_mentors():
-    """Fetch mentor section data"""
-    mentors = []
-    async for mentor in instructor_collection.find({}):
-        mentors.append({
-            "id": str(mentor["_id"]),
-            "name": mentor.get("name"),
-            "role": mentor.get("role"),
-            "experience": mentor.get("experience"),
-            "image_url": mentor.get("image_url")
-        })
 
-    if not mentors:
-        raise HTTPException(status_code=404, detail="No mentors found")
+    mentors, error = await fetch_all_mentors()
+
+    if error == "not_found":
+        raise CustomError("No mentors found", 404)   # ✅ updated
 
     return {
         "title": "Meet Our Professional Mentor",

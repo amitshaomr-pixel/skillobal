@@ -1,18 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends
-from database.database import hero_collection
+from fastapi import APIRouter, Depends
 from middleware.token_verification import check_token
-
+from dashboard.logic.logic import fetch_hero_section
+from middleware.exceptions import CustomError   # ✅ use custom error
 
 router = APIRouter(tags=["Hero Section"])
 
+
 @router.get("/hero-section", dependencies=[Depends(check_token)])
 async def get_hero_section():
-    """Fetch the hero section details"""
-    hero = await hero_collection.find_one({})
-    if not hero:
-        raise HTTPException(status_code=404, detail="Hero section not found")
 
-    # Convert ObjectId to string
-    hero["_id"] = str(hero["_id"])
-    
-    return {'data': hero}
+    hero_data, error = await fetch_hero_section()
+
+    if error == "not_found":
+        raise CustomError("Hero section not found", 404)   # ✅ updated
+
+    return {"data": hero_data}

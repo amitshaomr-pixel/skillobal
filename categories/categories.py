@@ -1,53 +1,48 @@
-from fastapi import APIRouter, HTTPException, Depends
-from database.database import categories_collection
+from fastapi import APIRouter, Depends
+from categories.logic.categories_logic import fetch_all_categories, fetch_courses_by_category
 from middleware.token_verification import check_token
-from utils.helpers import category_helper
-from database.database import courses_collection
-from bson import ObjectId
+from middleware.exceptions import CustomError   # <-- ADD THIS
 
 router = APIRouter(tags=["Categories"])
 
+
 @router.get("/categories", dependencies=[Depends(check_token)])
-async def get_popular_categories():
-    """Fetch list of all categories with main title and subtitle"""
-    
-    categories = []
-    async for cat in categories_collection.find({}):
-        categories.append({
-            "id": str(cat["_id"]),
-            "title": cat.get("name", "Untitled Category"),
-            "subtitle": cat.get("description", "No description available."),
-            "image_url": cat.get("image_url", "")
-        })
-    
+async def get_categories(limit: str | None = None):
+
+    categories = await fetch_all_categories()
+
     if not categories:
-        raise HTTPException(status_code=404, detail="No categories found")
+        raise CustomError("No categories found", 404)   # <-- UPDATED
+
+    if not limit:
+        limit_value = 0
+    else:
+        limit_value = 5
+
+    final_data = categories[:limit_value] if limit_value > 0 else categories
 
     return {
-        "title": "Popular Categories",
-        "subtitle": "Our mentors are professionals with years of experience in their fields, dedicated to helping you reach your learning goals.",
-        "data": categories
+        "title": "Categories",
+        "subtitle": (
+            "Our mentors are professionals with years of experience in their fields, "
+            "dedicated to helping you reach your learning goals."
+        ),
+        "data": final_data
     }
-
-
 
 
 @router.get("/categories/{category_id}", dependencies=[Depends(check_token)])
 async def get_courses_by_category(category_id: str):
-    """Fetch all courses that belong to a specific category"""
-    try:
-        oid = ObjectId(category_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid category id")
 
-    courses = []
-    async for course in courses_collection.find({"category_id": oid, "visible": True}):
-        courses.append(category_helper(course))
+    courses, error = await fetch_courses_by_category(category_id)
+
+    if error == "invalid_id":
+        raise CustomError("Invalid category ID", 400)  
 
     if not courses:
-        raise HTTPException(status_code=404, detail="No courses found for this category")
+        raise CustomError("No courses found for this category", 404) 
 
     return {
         "category_id": category_id,
-        "Data": courses
+        "data": courses
     }
